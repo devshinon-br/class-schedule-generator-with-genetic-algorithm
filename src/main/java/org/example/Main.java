@@ -22,8 +22,8 @@ public class Main {
         final List<Horario> horarios = new ArrayList<>();
         gerarHorarios(materias, professores, horarios); //100
 
-        embaralhaPorPeriodo(horarios);
-        gerarCsvComHorariosEmbaralhados(horarios);
+        final List<Horario> horariosEmbaralhadosPorPeriodo = embaralhaPorPeriodo(horarios);
+        gerarCsv(horariosEmbaralhadosPorPeriodo);
 
         System.out.println("Conflitos encontrados:" + verificarConflitoHorarios(horarios));
     }
@@ -33,12 +33,10 @@ public class Main {
 
         horariosPorPeriodo.forEach(Collections::shuffle);
 
-        final List<Horario> todosOsHorarios = horariosPorPeriodo
+        return horariosPorPeriodo
             .stream()
             .flatMap(List::stream)
             .collect(Collectors.toList());
-
-        return todosOsHorarios;
     }
 
     private static List<List<Horario>> quebraLista(final List<Horario> horarios) {
@@ -59,20 +57,20 @@ public class Main {
         // Percorrer a lista de horários
         for (int i = 0; i < horarios.size() - 1; i++) {
 
-            Horario horario1 = horarios.get(i);
-            int codigoProfessor1 = horario1.getProfessor().getCodigo();
-            int horario1Dia = i % 5;
-            int horario1Periodo = i / 5;
+            final Horario horario1 = horarios.get(i);
+            final int codigoProfessor1 = horario1.getProfessor().getCodigo();
+            final int codigoPeriodo1 = horario1.getMateria().getCodigoPeriodo();
+            final int diaHorario1 = i % 5;
 
-            Horario horario2 = horarios.get(i + 1);
-            int codigoProfessor2 = horario2.getProfessor().getCodigo();
-            int horario2Dia = (i + 1) % 5;
-            int horario2Periodo = (i + 1) / 5;
+            final Horario horario2 = horarios.get(i + 1);
+            final int codigoProfessor2 = horario2.getProfessor().getCodigo();
+            final int codigoPeriodo2 = horario2.getMateria().getCodigoPeriodo();
+            final int diaHorario2 = (i + 1) % 5;
 
             // Verificar se os professores são os mesmos e se estão no mesmo horário e dia, mas em períodos diferentes
-            if (codigoProfessor1 == codigoProfessor2
-                && horario1Dia == horario2Dia
-                && horario1Periodo != horario2Periodo) {
+            if (codigoPeriodo1 != codigoPeriodo2
+                && codigoProfessor1 == codigoProfessor2
+                && diaHorario1 == diaHorario2) {
                 quantidadeDeChoques++;
             }
         }
@@ -80,7 +78,7 @@ public class Main {
         return quantidadeDeChoques;
     }
 
-    private static void gerarCsvComHorariosEmbaralhados(final List<Horario> horarios) {
+    private static void gerarCsv(final List<Horario> horarios) {
         try {
             final FileWriter writer = new FileWriter("horarios.csv");
             final StringBuilder linha = new StringBuilder();
