@@ -6,26 +6,48 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
-        final List<Materia> materias = new ArrayList<>(); //25
-        criarMaterias(materias);
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Informe o tamanho da população: ");
+        int numberOfLines = scanner.nextInt();
+        scanner.close();
 
-        final List<Periodo> periodos = new ArrayList<>(); // 5
-        criarPeriodos(periodos);
+        try {
+            FileWriter writer = new FileWriter("horarios.csv");
 
-        final List<Professor> professores = new ArrayList<>(); //10
-        criarProfessores(professores);
+            for (int i = 0; i < numberOfLines; i++) {
+                System.out.println("Gerando CSV: Linha " + (i + 1));
 
-        final List<Horario> horarios = new ArrayList<>();
-        gerarHorarios(materias, professores, horarios); //100
+                final List<Materia> materias = new ArrayList<>(); //25
+                criarMaterias(materias);
 
-        final List<Horario> horariosEmbaralhadosPorPeriodo = embaralhaPorPeriodo(horarios);
-        gerarCsv(horariosEmbaralhadosPorPeriodo);
+                final List<Periodo> periodos = new ArrayList<>(); // 5
+                criarPeriodos(periodos);
 
-        System.out.println("Conflitos encontrados:" + verificarConflitoHorarios(horarios));
+                final List<Professor> professores = new ArrayList<>(); //10
+                criarProfessores(professores);
+
+                final List<Horario> horarios = new ArrayList<>();
+                gerarHorarios(materias, professores, horarios); //100
+
+                int conflitos = verificarConflitoHorarios(horarios);
+                System.out.println("Conflitos encontrados: " + conflitos);
+                System.out.println();
+
+                final List<Horario> horariosEmbaralhadosPorPeriodo = embaralhaPorPeriodo(horarios);
+                escreverLinhaCsv(horariosEmbaralhadosPorPeriodo, writer);
+            }
+
+            writer.flush();
+            writer.close();
+            System.out.println("CSV generated successfully!");
+        } catch (IOException e) {
+            System.out.println("Error generating CSV: " + e.getMessage());
+        }
     }
 
     private static List<Horario> embaralhaPorPeriodo(final List<Horario> horarios) {
@@ -78,31 +100,24 @@ public class Main {
         return quantidadeDeChoques;
     }
 
-    private static void gerarCsv(final List<Horario> horarios) {
-        try {
-            final FileWriter writer = new FileWriter("horarios.csv");
-            final StringBuilder linha = new StringBuilder();
+    private static void escreverLinhaCsv(final List<Horario> horarios, final FileWriter writer) throws IOException {
+        final StringBuilder linha = new StringBuilder();
 
-            // Concatena o codigo do professor e o codigo da materia
-            for (final Horario horario : horarios) {
-                linha.append(horario.getProfessor().getCodigo())
-                    .append("-")
-                    .append(horario.getMateria().getCodigo())
-                    .append(",");
-            }
-
-            // Remover a última vírgula da linha, se existir
-            if (linha.length() > 0) {
-                linha.setLength(linha.length() - 1);
-            }
-
-            writer.append(linha.toString());
-            writer.flush();
-            writer.close();
-            System.out.println("Arquivo CSV gerado com sucesso!");
-        } catch (IOException e) {
-            System.out.println("Erro ao gerar o arquivo CSV: " + e.getMessage());
+        // Concatena o codigo do professor e o codigo da materia
+        for (final Horario horario : horarios) {
+            linha.append(horario.getProfessor().getCodigo())
+                .append("-")
+                .append(horario.getMateria().getCodigo())
+                .append(",");
         }
+
+        // Remover a última vírgula da linha, se existir
+        if (linha.length() > 0) {
+            linha.setLength(linha.length() - 1);
+        }
+
+        writer.append(linha.toString());
+        writer.append(System.lineSeparator());
     }
 
     private static void gerarHorarios(final List<Materia> materias,
