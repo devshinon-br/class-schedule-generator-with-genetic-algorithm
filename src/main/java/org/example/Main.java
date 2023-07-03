@@ -82,17 +82,17 @@ public class Main {
             final Horario horario1 = horarios.get(i);
             final int codigoProfessor1 = horario1.getProfessor().getCodigo();
             final int codigoPeriodo1 = horario1.getMateria().getCodigoPeriodo();
-            final int diaHorario1 = i % 5;
+            final int diaHorario1 = horario1.getDia();
 
             final Horario horario2 = horarios.get(i + 1);
             final int codigoProfessor2 = horario2.getProfessor().getCodigo();
             final int codigoPeriodo2 = horario2.getMateria().getCodigoPeriodo();
-            final int diaHorario2 = (i + 1) % 5;
+            final int diaHorario2 = horario2.getDia();
 
             // Verificar se os professores são os mesmos e se estão no mesmo horário e dia, mas em períodos diferentes
-            if (codigoPeriodo1 != codigoPeriodo2
-                && codigoProfessor1 == codigoProfessor2
-                && diaHorario1 == diaHorario2) {
+            if (diaHorario1 == diaHorario2
+                && codigoPeriodo1 != codigoPeriodo2
+                && codigoProfessor1 == codigoProfessor2) {
                 quantidadeDeChoques++;
             }
         }
@@ -123,17 +123,13 @@ public class Main {
     private static void gerarHorarios(final List<Materia> materias,
                                       final List<Professor> professores,
                                       final List<Horario> horarios) {
-        int limiteInferior = 0;  // Limite inferior (inclusive)
-        int limiteSuperior = 10;  // Limite superior (exclusive)
-
         Random random = new Random();
 
         for (final Materia materia : materias) {
-            // Gera um número inteiro aleatório dentro do limite
-            int numeroAleatorio = random.nextInt(limiteSuperior - limiteInferior) + limiteInferior;
-
             for (int j = 0; j < 4; j++) {
-                horarios.add(new Horario(professores.get(numeroAleatorio), materia));
+                int codigoProfessorAleatorio = random.nextInt(10 - 0) + 0;
+                int diaDaSemanaAleatorio = random.nextInt(6 - 1) + 1;
+                horarios.add(new Horario(professores.get(codigoProfessorAleatorio), materia, diaDaSemanaAleatorio));
             }
         }
     }
