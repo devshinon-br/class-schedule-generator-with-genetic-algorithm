@@ -3,6 +3,7 @@ package org.example;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -35,21 +36,21 @@ public class Main {
                 final List<Horario> horarios = new ArrayList<>();
                 gerarHorarios(materias, professores, horarios); //100
 
-                int conflitos = verificarConflitoHorarios(horarios);
+                final List<Horario> horariosEmbaralhadosPorPeriodo = embaralhaPorPeriodo(horarios);
+
+                int conflitos = verificarConflitoHorarios(horariosEmbaralhadosPorPeriodo);
                 System.out.println("Conflitos encontrados: " + conflitos);
                 System.out.println();
 
-                final List<Horario> horariosEmbaralhadosPorPeriodo = embaralhaPorPeriodo(horarios);
                 todosOsHorarios.add(horariosEmbaralhadosPorPeriodo);
-
                 escreveLinhaCsv(horariosEmbaralhadosPorPeriodo, writer);
             }
 
             writer.flush();
             writer.close();
-            System.out.println("CSV generated successfully!");
+            System.out.println("CSV gerado com sucesso!");
         } catch (final IOException e) {
-            System.out.println("Error generating CSV: " + e.getMessage());
+            System.out.println("Erro ao gerar CSV: " + e.getMessage());
         }
     }
 
@@ -146,30 +147,23 @@ public class Main {
     }
 
     private static int verificarConflitoHorarios(final List<Horario> horarios) {
-        int quantidadeDeChoques = 0;
+        final AtomicInteger conflitos = new AtomicInteger();
 
         // Percorrer a lista de horários
-        for (int i = 0; i < horarios.size() - 1; i++) {
-
-            final Horario horario1 = horarios.get(i);
-            final int codigoProfessor1 = horario1.getProfessor().getCodigo();
-            final int codigoPeriodo1 = horario1.getMateria().getCodigoPeriodo();
-            final int diaHorario1 = horario1.getDia();
-
-            final Horario horario2 = horarios.get(i + 1);
-            final int codigoProfessor2 = horario2.getProfessor().getCodigo();
-            final int codigoPeriodo2 = horario2.getMateria().getCodigoPeriodo();
-            final int diaHorario2 = horario2.getDia();
-
-            // Verificar se os professores são os mesmos e se estão no mesmo horário e dia, mas em períodos diferentes
-            if (diaHorario1 == diaHorario2
-                    && codigoPeriodo1 != codigoPeriodo2
-                    && codigoProfessor1 == codigoProfessor2) {
-                quantidadeDeChoques++;
-            }
+        for (Horario horario : horarios) {
+            horarios.stream()
+                .filter(value -> !value.equals(horario))
+                .forEach(value -> {
+                    if (horario.getDia() == value.getDia()
+                        && horario.getPosicao() == value.getPosicao()
+                        && horario.getMateria().getCodigoPeriodo() != value.getMateria().getCodigoPeriodo()
+                        && horario.getProfessor().getCodigo()  == value.getProfessor().getCodigo()) {
+                            conflitos.getAndIncrement();
+                    }
+                });
         }
 
-        return quantidadeDeChoques;
+        return conflitos.get();
     }
 
     private static void escreveLinhaCsv(final List<Horario> horarios, final FileWriter writer) throws IOException {
@@ -192,16 +186,23 @@ public class Main {
         writer.append(System.lineSeparator());
     }
 
-    private static void gerarHorarios(final List<Materia> materias,
+    private static void gerarHorarios (final List<Materia> materias,
                                       final List<Professor> professores,
                                       final List<Horario> horarios) {
-        Random random = new Random();
-
+        final Random random = new Random();
         for (final Materia materia : materias) {
+            int codigoProfessorAleatorio = random.nextInt(10 - 0) + 0;
             for (int j = 0; j < 4; j++) {
-                int codigoProfessorAleatorio = random.nextInt(10 - 0) + 0;
-                int diaDaSemanaAleatorio = random.nextInt(6 - 1) + 1;
-                horarios.add(new Horario(professores.get(codigoProfessorAleatorio), materia, diaDaSemanaAleatorio));
+                int diaDaSemanaAleatorio = random.nextInt(5 - 0) + 0;
+                int posicaoAleatoriaDoHorario = random.nextInt(4 - 0) + 0;
+                horarios.add(
+                    new Horario(
+                        professores.get(codigoProfessorAleatorio),
+                        materia,
+                        diaDaSemanaAleatorio,
+                        posicaoAleatoriaDoHorario
+                    )
+                );
             }
         }
     }
