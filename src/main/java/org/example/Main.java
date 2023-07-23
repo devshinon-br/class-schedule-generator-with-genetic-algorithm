@@ -57,18 +57,19 @@ public class Main {
     private static List<List<Horario>> geraNovaPopulacaoDeHorarios(final List<List<Horario>> horarios) {
         final List<List<Horario>> horariosOrdenados = retornaHorariosOrdenadosPorQuantidadeDeConflitos(horarios);
         final List<List<Horario>> novosHorarios = new ArrayList<>();
-        final int metade = horariosOrdenados.size() / 2;
         final Random random = new Random();
 
         while (horariosOrdenados.size() > 0) {
-            int indicePrimeiraMetade = random.nextInt(metade);
-            int indiceSegundaMetade = random.nextInt(horariosOrdenados.size() - metade) + metade;
+            final int metade = horariosOrdenados.size() / 2;
 
-            final List<Horario> primeiroIndividuo = horariosOrdenados.get(indicePrimeiraMetade);
-            final List<Horario> segundoIndividuo = horariosOrdenados.get(indiceSegundaMetade);
+            int indiceAleatorioPrimeiraMetade = random.nextInt(metade);
+            int indiceAleatorioSegundaMetade = random.nextInt((horariosOrdenados.size() - 1) - metade) + metade;
 
-            horariosOrdenados.remove(indicePrimeiraMetade);
-            horariosOrdenados.remove(indiceSegundaMetade);
+            final List<Horario> primeiroIndividuo = horariosOrdenados.get(indiceAleatorioPrimeiraMetade);
+            final List<Horario> segundoIndividuo = horariosOrdenados.get(indiceAleatorioSegundaMetade);
+
+            horariosOrdenados.remove(indiceAleatorioPrimeiraMetade);
+            horariosOrdenados.remove(indiceAleatorioSegundaMetade);
 
             novosHorarios.addAll(cruzamentoDeHorarios(primeiroIndividuo, segundoIndividuo));
         }
