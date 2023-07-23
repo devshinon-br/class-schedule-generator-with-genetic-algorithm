@@ -7,6 +7,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class Main {
+
+    static final int QUANTIDADE_PERIODO = 5;
+    static final int QUANTIDADE_DIAS_LETIVOS = 5;
+    static final int QUANTIDADE_HORARIO_DIAS_LETIVOS = 4;
+    static final int QUANTIDADE_HORARIO_POR_PERIODO = QUANTIDADE_DIAS_LETIVOS * QUANTIDADE_HORARIO_DIAS_LETIVOS;
+    static final int TOTAL_HORARIOS = QUANTIDADE_HORARIO_POR_PERIODO * QUANTIDADE_PERIODO;
+    static final int TOTAL_GERACOES = 500;
+    public static final double PROBABILIDADE_CRUZAMENTO = 0.99;
+    public static final double PROBABILIDADE_MUTACAO = 0.50;
+
     public static void main(String[] args) {
         final Scanner scanner = new Scanner(System.in);
         final List<List<Horario>> todosOsHorarios = new ArrayList<>();
@@ -14,14 +24,30 @@ public class Main {
         System.out.print("Informe o tamanho da população: ");
         criaOsIndividuosPrimordiaisEEscreveCsv(todosOsHorarios, scanner.nextInt());
 
+        List<List<Horario>> novaPopulacao = todosOsHorarios;
+
+        for(int i = 0; i < TOTAL_GERACOES; i++) {
+            novaPopulacao = geraNovaPopulacaoDeHorarios(novaPopulacao);
+
+            System.out.println();
+            System.out.println("NOVA POPULACAO: " + i);
+            verificaConflitosDaNovaPopulacao(novaPopulacao);
+        }
+
+        System.out.println("Melhor individuo da ultima geracao: "
+            + verificarConflitoDeHorarios(retornaHorariosOrdenadosPorQuantidadeDeConflitos(novaPopulacao).get(0))
+        );
+
         scanner.close();
     }
 
-    private static void criaOsIndividuosPrimordiaisEEscreveCsv(final List<List<Horario>> todosOsHorarios, final int numberOfLines) {
+    private static void criaOsIndividuosPrimordiaisEEscreveCsv(
+        final List<List<Horario>> todosOsHorarios,
+        final int tamanhoDaPopulacao) {
         try {
             final FileWriter writer = new FileWriter("horarios.csv");
 
-            for (int i = 0; i < numberOfLines; i++) {
+            for (int i = 0; i < tamanhoDaPopulacao; i++) {
                 System.out.println("Gerando CSV: Linha " + (i + 1));
 
                 final List<Materia> materias = new ArrayList<>(); //25
@@ -38,9 +64,8 @@ public class Main {
 
                 final List<Horario> horariosEmbaralhadosPorPeriodo = embaralhaPorPeriodo(horarios);
 
-                int conflitos = verificarConflitoHorarios(horariosEmbaralhadosPorPeriodo);
-                System.out.println("Conflitos encontrados: " + conflitos);
-                System.out.println();
+                int conflitos = verificarConflitoDeHorarios(horariosEmbaralhadosPorPeriodo);
+                exibeOsConflitos(conflitos);
 
                 todosOsHorarios.add(horariosEmbaralhadosPorPeriodo);
                 escreveLinhaCsv(horariosEmbaralhadosPorPeriodo, writer);
@@ -54,43 +79,53 @@ public class Main {
         }
     }
 
+    private static void verificaConflitosDaNovaPopulacao(final List<List<Horario>> novaPopulacao) {
+        for (int i = 0; i < novaPopulacao.size(); i++) {
+            int conflitos = verificarConflitoDeHorarios(novaPopulacao.get(i));
+            exibeOsConflitos(conflitos);
+        }
+    }
+
+    private static void exibeOsConflitos(final int conflitos) {
+        System.out.println("Conflitos encontrados: " + conflitos);
+        System.out.println();
+    }
+
     private static List<List<Horario>> geraNovaPopulacaoDeHorarios(final List<List<Horario>> horarios) {
         final List<List<Horario>> horariosOrdenados = retornaHorariosOrdenadosPorQuantidadeDeConflitos(horarios);
         final List<List<Horario>> novosHorarios = new ArrayList<>();
         final Random random = new Random();
 
-        while (horariosOrdenados.size() > 0) {
+        for (int i = 0; i < horariosOrdenados.size(); i++) {
             final int metade = horariosOrdenados.size() / 2;
 
             int indiceAleatorioPrimeiraMetade = random.nextInt(metade);
-            int indiceAleatorioSegundaMetade = random.nextInt((horariosOrdenados.size() - 1) - metade) + metade;
+            int indiceAleatorioSegundaMetade = random.nextInt(((horariosOrdenados.size()) - metade)) + metade;
 
-            final List<Horario> primeiroIndividuo = horariosOrdenados.get(indiceAleatorioPrimeiraMetade);
-            final List<Horario> segundoIndividuo = horariosOrdenados.get(indiceAleatorioSegundaMetade);
+            final List<Horario> paiAleatorioDaPrimeiraMetade = horariosOrdenados.get(indiceAleatorioPrimeiraMetade);
+            final List<Horario> paiAleatorioDaSegundaMetade = horariosOrdenados.get(indiceAleatorioSegundaMetade);
 
-            horariosOrdenados.remove(indiceAleatorioPrimeiraMetade);
-            horariosOrdenados.remove(indiceAleatorioSegundaMetade);
-
-            novosHorarios.addAll(cruzamentoDeHorarios(primeiroIndividuo, segundoIndividuo));
+            novosHorarios.add(cruzamentoDeHorarios(paiAleatorioDaPrimeiraMetade, paiAleatorioDaSegundaMetade));
         }
 
         return novosHorarios;
     }
 
-    private static List<List<Horario>> cruzamentoDeHorarios(final List<Horario> individuoUm, final List<Horario> individuoDois) {
+    private static List<Horario> cruzamentoDeHorarios(final List<Horario> individuoUm, final List<Horario> individuoDois) {
         final List<List<Horario>> filhos = new ArrayList<>();
+        final Random random = new Random();
 
-        if (verificarProbabilidade(0.95)) {
-            int tamanhoMetade = individuoUm.size() / 2;
+        if (verificarProbabilidade(PROBABILIDADE_CRUZAMENTO)) {
+            int tamanhoMetade = (int) Math.floor((double) QUANTIDADE_PERIODO / 2);
+            int primeiraMetade = tamanhoMetade * QUANTIDADE_HORARIO_POR_PERIODO;
 
-            List<Horario> filhoUm = new ArrayList<>(individuoUm.subList(0, tamanhoMetade));
-            filhoUm.addAll(individuoDois.subList(tamanhoMetade, individuoDois.size()));
+            List<Horario> filhoUm = new ArrayList<>(individuoUm.subList(0, primeiraMetade));
+            filhoUm.addAll(individuoDois.subList(primeiraMetade, individuoDois.size()));
 
-            List<Horario> filhoDois = new ArrayList<>(individuoDois.subList(0, tamanhoMetade));
-            filhoDois.addAll(individuoUm.subList(tamanhoMetade, individuoUm.size()));
+            List<Horario> filhoDois = new ArrayList<>(individuoUm.subList(0, primeiraMetade));
+            filhoDois.addAll(individuoUm.subList(primeiraMetade, individuoUm.size()));
 
-            if(verificarProbabilidade(0.90)) {
-                //TODO: mutacao
+            if(verificarProbabilidade(PROBABILIDADE_MUTACAO)) {
                 filhoUm = mutacaoDeHorarios(filhoUm);
                 filhoDois = mutacaoDeHorarios(filhoDois);
             }
@@ -98,13 +133,13 @@ public class Main {
             filhos.add(filhoUm);
             filhos.add(filhoDois);
 
-            return filhos;
+            return filhos.get(random.nextInt(2));
         }
 
         filhos.add(individuoUm);
         filhos.add(individuoDois);
 
-        return filhos;
+        return filhos.get(random.nextInt(2));
     }
 
     private static boolean verificarProbabilidade(double probabilidade) {
@@ -115,12 +150,22 @@ public class Main {
     }
 
     private static List<Horario> mutacaoDeHorarios(final List<Horario> individuo) {
+        Random random = new Random();
+        for (int i = 0; i < TOTAL_HORARIOS; i += QUANTIDADE_HORARIO_POR_PERIODO) {
+            int ultimoIndexDoPeriodo = (i + QUANTIDADE_HORARIO_POR_PERIODO - 1);
+
+            int primeiroIndex = random.nextInt((ultimoIndexDoPeriodo - i) + 1) + i;
+            int segundoIndex = random.nextInt((ultimoIndexDoPeriodo - i) + 1) + i;
+
+            Collections.swap(individuo, primeiroIndex, segundoIndex);
+        }
+
         return individuo;
     }
 
     private static List<List<Horario>> retornaHorariosOrdenadosPorQuantidadeDeConflitos(final List<List<Horario>> horarios) {
         return horarios.stream()
-                .sorted(Comparator.comparingInt(Main::verificarConflitoHorarios))
+                .sorted(Comparator.comparingInt(Main::verificarConflitoDeHorarios))
                 .collect(Collectors.toList());
     }
 
@@ -136,7 +181,7 @@ public class Main {
     }
 
     private static List<List<Horario>> quebraLista(final List<Horario> horarios) {
-        List<List<Horario>> sublistas = new ArrayList<>();
+        final List<List<Horario>> sublistas = new ArrayList<>();
 
         int tamanhoSublista = 20;
         for (int i = 0; i < horarios.size(); i += tamanhoSublista) {
@@ -147,7 +192,7 @@ public class Main {
         return sublistas;
     }
 
-    private static int verificarConflitoHorarios(final List<Horario> horarios) {
+    private static int verificarConflitoDeHorarios(final List<Horario> horarios) {
         final AtomicInteger conflitos = new AtomicInteger();
 
         // Percorrer a lista de horários
@@ -192,10 +237,10 @@ public class Main {
                                       final List<Horario> horarios) {
         final Random random = new Random();
         for (final Materia materia : materias) {
-            int codigoProfessorAleatorio = random.nextInt(10 - 0) + 0;
+            int codigoProfessorAleatorio = random.nextInt(10);
             for (int j = 0; j < 4; j++) {
-                int diaDaSemanaAleatorio = random.nextInt(5 - 0) + 0;
-                int posicaoAleatoriaDoHorario = random.nextInt(4 - 0) + 0;
+                int diaDaSemanaAleatorio = random.nextInt(5);
+                int posicaoAleatoriaDoHorario = random.nextInt(4);
                 horarios.add(
                     new Horario(
                         professores.get(codigoProfessorAleatorio),

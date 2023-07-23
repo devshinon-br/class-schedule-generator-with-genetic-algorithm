@@ -1,13 +1,9 @@
 package org.example;
 
-import java.util.List;
-
 public class Professor {
 
     private int codigo;
     private String nome;
-
-    private List<Materia> materiasQueLeciona;
 
     public Professor(final int codigo, final String nome) {
         this.codigo = codigo;
