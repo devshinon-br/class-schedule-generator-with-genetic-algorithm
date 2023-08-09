@@ -134,7 +134,7 @@ public class Main {
         for (int i = 0; i < horariosOrdenados.size(); i++) {
             final int metade = horariosOrdenados.size() / 2;
 
-            int indiceAleatorioPrimeiraMetade = random.nextInt(metade);
+            int indiceAleatorioPrimeiraMetade = metade == 0 ? 0 : random.nextInt(metade);
             int indiceAleatorioSegundaMetade = random.nextInt(((horariosOrdenados.size()) - metade)) + metade;
 
             final List<Horario> paiAleatorioDaPrimeiraMetade = horariosOrdenados.get(indiceAleatorioPrimeiraMetade);
